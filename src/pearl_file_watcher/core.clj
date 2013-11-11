@@ -28,14 +28,14 @@
 (defn init-watcher
   [{host :host
     port :port
-    check-rate :rate :as p}]
+    check-rate :rate :as p} files]
   (info "start watcher")
   (spy :debug p)
   (start-tcp-server handler {:host host :port port, :frame (string :utf-8 :delimiters ["\r\n"])})
-  (watcher ["resources/"]
+  (watcher files
            (rate check-rate)
            (file-filter ignore-dotfiles)
-           (file-filter (extensions :json))
+           (file-filter (extensions :json :txt :swf))
            (on-change files-changed)))
 
 
@@ -53,5 +53,5 @@
       (println banner)
       (System/exit 0))
     (initLogger (:log options))
-    (init-watcher options)))
+    (init-watcher options args)))
 
