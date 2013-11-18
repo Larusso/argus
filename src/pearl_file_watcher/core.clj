@@ -6,6 +6,7 @@
             [gloss.core :refer :all]
             [clojure.tools.cli :refer (cli)]
             [clojure.string :refer (replace-first)]
+            [digest]
             [taoensso.timbre :as timbre :refer (trace debug info warn fatal spy with-log-level)])
   (:gen-class))
 
@@ -21,15 +22,39 @@
   (when-let [root (filter (partial starts-with? changed-file) root-paths)]
     (replace-first changed-file (first root) "")))
 
+(defn create-change-message
+  [root-files changed-file-path]
+  (let [abs-path (.getAbsolutePath changed-file-path)
+        relative-path (get-relative-path root-files abs-path)
+        hash-value (digest/md5 relative-path)]
+    (m-encoder/prepare-message hash-value abs-path)))
+
 (defn files-changed [root-files changed-files]
   (info "files changed" changed-files)
-  ;;(enqueue main-channel m-encoder/prepare-message 12 ))
-  (apply enqueue main-channel (map #(m-encoder/prepare-message 12 (.getAbsolutePath %)) changed-files)))
+  (apply enqueue main-channel (map (partial create-change-message root-files) changed-files)))
+
+(defn path-filter
+  [path-hash [id]]
+  (spy :debug [path-hash id])
+  (= id path-hash))
+
+(defn close-channel-handler
+  [channel]
+  (info "channel closed")
+  (ground channel))
+
+
+(defn client-handler
+  [ch [command path]]
+  (info "client handler")
+  (spy :debug [ch command path])
+  (let [filter-ch (->> main-channel (fork) (filter* (partial path-filter (digest/md5 path))))]
+    (receive-all filter-ch #(enqueue ch %))
+    (on-closed ch (partial close-channel-handler filter-ch))))
 
 (defn handler [channel client-info]
   (info "channel connected")
-  (receive-all channel println)
-  (siphon main-channel channel))
+  (receive-all channel (partial client-handler channel)))
 
 (defn initLogger
   [path]
@@ -43,7 +68,7 @@
   (info "start watcher")
   (spy :debug p)
   (spy :debug files)
-  (start-tcp-server handler {:host host :port port :encoder [:uint32 (repeated :byte :prefix :int32)] :decoder (string :utf-8 :delimiters ["\r\n"])})
+  (start-tcp-server handler {:host host :port port :encoder [(string :utf-8 :length 32) (repeated :byte :prefix :int32)] :decoder [(string :utf-8 :delimiters [":"]) (string :utf-8 :delimiters ["\r\n"])]})
   (watcher files
            (rate check-rate)
            (file-filter ignore-dotfiles)
