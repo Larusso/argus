@@ -1,59 +1,39 @@
 (ns pearl-file-watcher.message-handler
   (:require [lamina.core :as lamina]
             [lamina.viz :as viz]
-            [taoensso.timbre :as timbre :refer (trace debug info warn fatal spy)]
-            [digest]))
+            [lamina.trace :as trace :refer (defn-instrumented)]
+            [taoensso.timbre :as timbre :refer (debug info spy)]
+            [digest]
+            [clojure.pprint :refer :all]))
 
 (def main-channel (lamina/channel))
 
-(def client-1-in (lamina/channel))
-(def client-1-out (lamina/channel))
-(def client-2-in (lamina/channel))
-(def client-2-out (lamina/channel))
-
-
-(def path-1 "/User/larusso/work/home/lulu")
-(def path-2 "/User/larusso/work/")
-
 (defn has-equal-hash?
   [path-hash [id]]
-  (spy :debug [path-hash id])
   (= id path-hash))
 
-(defn close-channel-handler
+(defn-instrumented close-channel-handler
+  {:probes {:return (lamina/sink->> pprint)} :capture :in-out}
   [ch]
-  (info "channel closed")
-  (lamina/ground ch))
+  (lamina/close ch))
 
-(defn client-message-handler
+(defn-instrumented inform-change
+  {:probes {:return (lamina/sink->> pprint)} :capture :in-out}
+  [ch message]
+  (lamina/enqueue ch message)
+  (viz/view-graph ch main-channel))
+
+(defn-instrumented client-message-handler
+  {:probes {:return (lamina/sink->> pprint)} :capture :in-out}
   [ch [command path]]
   (let [filter-ch (->> main-channel
-                       (lamina/fork)
                        (lamina/filter* (partial has-equal-hash? (digest/md5 path))))]
-    (lamina/receive-all filter-ch #(lamina/enqueue client-1-out %))
+    (lamina/ground main-channel)
+    (lamina/receive-all filter-ch (partial inform-change ch))
     (lamina/on-closed ch (partial close-channel-handler filter-ch))))
 
-(defn channel-connect
+(defn-instrumented channel-connect
+  {:probes {:return (lamina/sink->> pprint)} :capture :in-out}
   [ch client-info]
   (lamina/receive-all ch
                (partial client-message-handler ch)))
-
-
-(channel-connect client-1-in {})
-
-(lamina/enqueue client-1-in ["r" path-2])
-
-
-(lamina/enqueue main-channel [(digest/md5 path-2) "test-2"])
-(lamina/enqueue main-channel [(digest/md5 path-1) "test-1"])
-
-;;(lamina/enqueue client-1-in ["r" path-1])
-
-(lamina/close client-1-in)
-
-(lamina/enqueue main-channel [(digest/md5 path-2) "test-2"])
-(lamina/enqueue main-channel [(digest/md5 path-1) "test-1"])
-(lamina/enqueue main-channel [(digest/md5 path-2) "test-2"])
-
-(viz/view-graph main-channel client-1-in client-1-out)
-

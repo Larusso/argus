@@ -1,5 +1,6 @@
 (ns pearl-file-watcher.core
   (:require [pearl-file-watcher.message-encoder :as m-encoder]
+            [pearl-file-watcher.message-handler :as m-handler]
             [watchtower.core :refer :all]
             [lamina.core :refer :all]
             [aleph.tcp :refer :all]
@@ -10,7 +11,6 @@
             [taoensso.timbre :as timbre :refer (trace debug info warn fatal spy with-log-level)])
   (:gen-class))
 
-(def main-channel (channel))
 (def server-port 9000)
 
 (defn starts-with?
@@ -31,30 +31,7 @@
 
 (defn files-changed [root-files changed-files]
   (info "files changed" changed-files)
-  (apply enqueue main-channel (map (partial create-change-message root-files) changed-files)))
-
-(defn path-filter
-  [path-hash [id]]
-  (spy :debug [path-hash id])
-  (= id path-hash))
-
-(defn close-channel-handler
-  [channel]
-  (info "channel closed")
-  (ground channel))
-
-
-(defn client-handler
-  [ch [command path]]
-  (info "client handler")
-  (spy :debug [ch command path])
-  (let [filter-ch (->> main-channel (fork) (filter* (partial path-filter (digest/md5 path))))]
-    (receive-all filter-ch #(enqueue ch %))
-    (on-closed ch (partial close-channel-handler filter-ch))))
-
-(defn handler [channel client-info]
-  (info "channel connected")
-  (receive-all channel (partial client-handler channel)))
+  (apply enqueue m-handler/main-channel (map (partial create-change-message root-files) changed-files)))
 
 (defn initLogger
   [path]
@@ -68,7 +45,7 @@
   (info "start watcher")
   (spy :debug p)
   (spy :debug files)
-  (start-tcp-server handler {:host host :port port :encoder [(string :utf-8 :length 32) (repeated :byte :prefix :int32)] :decoder [(string :utf-8 :delimiters [":"]) (string :utf-8 :delimiters ["\r\n"])]})
+  (start-tcp-server m-handler/channel-connect {:host host :port port :encoder [(string :utf-8 :length 32) (repeated :byte :prefix :int32)] :decoder [(string :utf-8 :delimiters [":"]) (string :utf-8 :delimiters ["\r\n"])]})
   (watcher files
            (rate check-rate)
            (file-filter ignore-dotfiles)
