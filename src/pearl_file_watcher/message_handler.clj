@@ -1,39 +1,69 @@
 (ns pearl-file-watcher.message-handler
-  (:require [lamina.core :as lamina]
+  (:require [lamina.core :as lamina :refer (map* filter* close ground receive-all)]
             [lamina.viz :as viz]
             [lamina.trace :as trace :refer (defn-instrumented)]
             [taoensso.timbre :as timbre :refer (debug info spy)]
             [digest]
             [clojure.pprint :refer :all]))
 
-(def main-channel (lamina/channel))
+(declare main-channel remove-channel update-channel register-channel)
 
-(defn has-equal-hash?
-  [path-hash [id]]
-  (= id path-hash))
+(defn push-hash
+  [[- path source-channel :as message]]
+  [(digest/md5 path) source-channel])
 
-(defn-instrumented close-channel-handler
-  {:probes {:return (lamina/sink->> pprint)} :capture :in-out}
-  [ch]
-  (lamina/close ch))
+(defn register?
+  [[command]]
+  (= "r" command))
 
-(defn-instrumented inform-change
-  {:probes {:return (lamina/sink->> pprint)} :capture :in-out}
+(defn update?
+  [[command]]
+  (= "u" command))
+
+(defn remove?
+  [[command]]
+  (= "d" command))
+
+(defn inform-change
   [ch message]
-  (lamina/enqueue ch message)
-  (viz/view-graph ch main-channel))
+  (lamina/enqueue ch message))
 
-(defn-instrumented client-message-handler
-  {:probes {:return (lamina/sink->> pprint)} :capture :in-out}
-  [ch [command path]]
-  (let [filter-ch (->> main-channel
-                       (lamina/filter* (partial has-equal-hash? (digest/md5 path))))]
-    (lamina/ground main-channel)
-    (lamina/receive-all filter-ch (partial inform-change ch))
-    (lamina/on-closed ch (partial close-channel-handler filter-ch))))
+(defn isPathEqual
+  [hash1 [hash2]]
+  (= hash1 hash2))
 
-(defn-instrumented channel-connect
-  {:probes {:return (lamina/sink->> pprint)} :capture :in-out}
+(defn is-source-channel-equal
+  [channel1 [- channel2]]
+  (= channel1 channel2))
+
+(defn close-channels
+  [channels & -]
+  (doall
+   (map close channels)))
+
+(defn on-register
+  [[path-hash source-channel]]
+  (let [filter-fn (partial isPathEqual path-hash)
+        channel-compare (partial is-source-channel-equal source-channel)
+        remove-filter #(= (filter-fn %) (channel-compare %))
+        filter-rm-ch (filter* remove-filter remove-channel)
+        filter-up-ch (filter* filter-fn update-channel)]
+    (ground remove-channel)
+    (ground update-channel)
+    (receive-all filter-up-ch (partial inform-change source-channel))
+    (receive-all filter-rm-ch (partial close-channels [filter-up-ch filter-rm-ch]))
+    (lamina/on-closed source-channel #(close-channels [filter-up-ch filter-rm-ch]))))
+
+(defn setup-register-ch []
+  (let [filter-ch (filter* register? main-channel)]
+    (receive-all (map* push-hash filter-ch) on-register)
+    filter-ch))
+
+(def main-channel (lamina/channel))
+(def remove-channel (map* push-hash (filter* remove? main-channel)))
+(def update-channel (map* push-hash (filter* update? main-channel)))
+(def register-channel (setup-register-ch))
+
+(defn channel-connect
   [ch client-info]
-  (lamina/receive-all ch
-               (partial client-message-handler ch)))
+  (lamina/siphon (map* #(conj % ch) ch) main-channel))

@@ -2,6 +2,7 @@
   (:require [pearl-file-watcher.message-encoder :as m-encoder]
             [pearl-file-watcher.message-handler :as m-handler]
             [watchtower.core :refer :all]
+            [lamina.viz :as viz]
             [lamina.core :refer :all]
             [aleph.tcp :refer :all]
             [gloss.core :refer :all]
@@ -27,11 +28,14 @@
   (let [abs-path (.getAbsolutePath changed-file-path)
         relative-path (get-relative-path root-files abs-path)
         hash-value (digest/md5 relative-path)]
-    (m-encoder/prepare-message hash-value abs-path)))
+    (m-encoder/prepare-message relative-path abs-path)))
 
 (defn files-changed [root-files changed-files]
   (info "files changed" changed-files)
-  (apply enqueue m-handler/main-channel (map (partial create-change-message root-files) changed-files)))
+  (viz/view-graph m-handler/main-channel)
+  (apply enqueue m-handler/main-channel (map (partial create-change-message root-files) changed-files))
+  ;;(viz/view-propagation m-handler/main-channel (first (map (partial create-change-message root-files) changed-files))
+  )
 
 (defn initLogger
   [path]

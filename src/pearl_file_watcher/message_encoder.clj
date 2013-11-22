@@ -13,4 +13,4 @@
 (defn prepare-message
   [id file-path]
   (let [file-content (slurp-binary-file! (io/as-file file-path))]
-    [id (vec file-content)]))
+    ["u" id (vec file-content)]))
