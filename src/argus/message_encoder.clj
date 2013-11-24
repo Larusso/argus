@@ -1,4 +1,4 @@
-(ns eyeball.message-encoder
+(ns argus.message-encoder
   (:require [clojure.java.io :as io])
   (:import [java.nio ByteBuffer]
            [java.io File]))

@@ -1,6 +1,6 @@
-(ns eyeball.core
-  (:require [pearl-file-watcher.message-encoder :as m-encoder]
-            [pearl-file-watcher.message-handler :as m-handler]
+(ns argus.core
+  (:require [argus.message-encoder :as m-encoder]
+            [argus.message-handler :as m-handler]
             [watchtower.core :refer :all]
             [lamina.viz :as viz]
             [lamina.core :refer :all]
