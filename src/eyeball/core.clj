@@ -1,4 +1,4 @@
-(ns pearl-file-watcher.core
+(ns eyeball.core
   (:require [pearl-file-watcher.message-encoder :as m-encoder]
             [pearl-file-watcher.message-handler :as m-handler]
             [watchtower.core :refer :all]

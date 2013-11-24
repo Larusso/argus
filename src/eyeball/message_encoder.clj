@@ -1,4 +1,4 @@
-(ns pearl-file-watcher.message-encoder
+(ns eyeball.message-encoder
   (:require [clojure.java.io :as io])
   (:import [java.nio ByteBuffer]
            [java.io File]))
