@@ -8,7 +8,8 @@
                  [aleph "0.3.0"]
                  [com.taoensso/timbre "2.7.1"]
                  [org.clojure/tools.cli "0.2.4"]
-                 [digest "1.4.3"]]
+                 [digest "1.4.3"]
+                 [hiccup "1.0.4"]]
   :main argus.core
   :aot [argus.core]
   :jvm-opts ["-Djava.net.preferIPv4Stack=true"])

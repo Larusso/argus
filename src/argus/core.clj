@@ -1,6 +1,6 @@
 (ns argus.core
-  (:require [argus.message-encoder :as m-encoder]
-            [argus.message-handler :as m-handler]
+  (:require [argus.messaging.encoder :as m-encoder]
+            [argus.messaging :as m-handler]
             [watchtower.core :refer :all]
             [lamina.viz :as viz]
             [lamina.core :refer :all]

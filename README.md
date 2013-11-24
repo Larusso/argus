@@ -1,10 +1,16 @@
 # argus
 
-A Clojure library designed to ... well, that part is up to you.
+'argus' is a socket server that will watch and distribute file changes
 
 ## Usage
 
 FIXME
+
+## Todo`s
+
+- serve flash socked crossdomain.xml
+- status html page
+
 
 ## License
 

@@ -1,4 +1,4 @@
-(ns argus.message-handler
+(ns argus.messaging
   (:require [lamina.core :as lamina :refer (map* filter* close ground receive-all)]
             [lamina.viz :as viz]
             [lamina.trace :as trace :refer (defn-instrumented)]

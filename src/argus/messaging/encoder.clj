@@ -1,4 +1,4 @@
-(ns argus.message-encoder
+(ns argus.messaging.encoder
   (:require [clojure.java.io :as io])
   (:import [java.nio ByteBuffer]
            [java.io File]))
