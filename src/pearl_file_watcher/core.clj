@@ -32,7 +32,7 @@
 
 (defn files-changed [root-files changed-files]
   (info "files changed" changed-files)
-  (viz/view-graph m-handler/main-channel)
+  ;;(viz/view-graph m-handler/main-channel)
   (apply enqueue m-handler/main-channel (map (partial create-change-message root-files) changed-files))
   ;;(viz/view-propagation m-handler/main-channel (first (map (partial create-change-message root-files) changed-files))
   )

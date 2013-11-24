@@ -4,6 +4,7 @@
             [lamina.trace :as trace :refer (defn-instrumented)]
             [taoensso.timbre :as timbre :refer (debug info spy)]
             [digest]
+            [clojure.string :refer (replace-first)]
             [clojure.pprint :refer :all]))
 
 (declare main-channel remove-channel update-channel register-channel)
@@ -23,6 +24,16 @@
 (defn remove?
   [[command]]
   (= "d" command))
+
+(defn debug?
+  [[command]]
+  (.startsWith command "debug"))
+
+(defn viz-debug-message
+  [[command message source-channel]]
+  (debug command)
+  (debug message)
+  (viz/view-propagation main-channel [(replace-first command "debug" "") message source-channel]))
 
 (defn inform-change
   [ch message]
@@ -63,6 +74,9 @@
 (def remove-channel (map* push-hash (filter* remove? main-channel)))
 (def update-channel (map* push-hash (filter* update? main-channel)))
 (def register-channel (setup-register-ch))
+(def debug-channel (filter* debug? main-channel))
+
+(receive-all debug-channel viz-debug-message)
 
 (defn channel-connect
   [ch client-info]
