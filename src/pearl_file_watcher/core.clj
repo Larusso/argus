@@ -12,8 +12,6 @@
             [taoensso.timbre :as timbre :refer (trace debug info warn fatal spy with-log-level)])
   (:gen-class))
 
-(def server-port 9000)
-
 (defn starts-with?
   [name check]
   (.startsWith name check))
@@ -32,10 +30,7 @@
 
 (defn files-changed [root-files changed-files]
   (info "files changed" changed-files)
-  ;;(viz/view-graph m-handler/main-channel)
-  (apply enqueue m-handler/main-channel (map (partial create-change-message root-files) changed-files))
-  ;;(viz/view-propagation m-handler/main-channel (first (map (partial create-change-message root-files) changed-files))
-  )
+  (apply enqueue m-handler/main-channel (map (partial create-change-message root-files) changed-files)))
 
 (defn initLogger
   [path]
