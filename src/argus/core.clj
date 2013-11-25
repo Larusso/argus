@@ -1,14 +1,17 @@
 (ns argus.core
   (:require [argus.messaging.encoder :as m-encoder]
             [argus.messaging :as m-handler]
+            [argus.admin.handler :as admin]
             [watchtower.core :refer :all]
             [lamina.viz :as viz]
             [lamina.core :refer :all]
             [aleph.tcp :refer :all]
+            [aleph.http :refer :all]
             [gloss.core :refer :all]
             [clojure.tools.cli :refer (cli)]
             [clojure.string :refer (replace-first)]
             [digest]
+            [ring.adapter.jetty :refer :all]
             [taoensso.timbre :as timbre :refer (trace debug info warn fatal spy with-log-level)])
   (:gen-class))
 
@@ -51,6 +54,9 @@
            (file-filter (extensions :json :txt :swf))
            (on-change (partial files-changed files))))
 
+(defn start-web []
+  (run-jetty (var admin/app) {:port 8080 :join? false}))
+
 (defn get-pid-file
   []
   (clojure.java.io/file (System/getProperty "daemon.pidfile")))
@@ -80,5 +86,6 @@
     (if (:deamon options)
       (daemonize))
     (initLogger (:log options))
-    (init-watcher options args)))
+    (init-watcher options args)
+    (start-web)))
 

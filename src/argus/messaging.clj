@@ -5,7 +5,9 @@
             [taoensso.timbre :as timbre :refer (debug info spy)]
             [digest]
             [clojure.string :refer (replace-first)]
-            [clojure.pprint :refer :all]))
+            [clojure.pprint :refer :all])
+  (:import [java.io File]
+           [javax.imageio ImageIO]))
 
 (declare main-channel remove-channel update-channel register-channel)
 
@@ -81,3 +83,7 @@
 (defn channel-connect
   [ch client-info]
   (lamina/siphon (map* #(conj % ch) ch) main-channel))
+
+(defn export-graph
+  []
+  (ImageIO/write (viz/render-graph main-channel) "png" (File. "resources/public/images/graph.png")))
