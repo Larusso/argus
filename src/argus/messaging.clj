@@ -11,6 +11,8 @@
 
 (declare main-channel remove-channel update-channel register-channel)
 
+(def connected-clients (atom []))
+
 (defn push-hash
   [[- path source-channel :as message]]
   [(digest/md5 path) source-channel])
@@ -26,16 +28,6 @@
 (defn remove?
   [[command]]
   (= "d" command))
-
-(defn debug?
-  [[command]]
-  (.startsWith command "debug"))
-
-(defn viz-debug-message
-  [[command message source-channel]]
-  (debug command)
-  (debug message)
-  (viz/view-propagation main-channel [(replace-first command "debug" "") message source-channel]))
 
 (defn inform-change
   [ch message]
@@ -76,14 +68,14 @@
 (def remove-channel (map* push-hash (filter* remove? main-channel)))
 (def update-channel (map* push-hash (filter* update? main-channel)))
 (def register-channel (setup-register-ch))
-(def debug-channel (filter* debug? main-channel))
-
-(receive-all debug-channel viz-debug-message)
 
 (defn channel-connect
   [ch client-info]
-  (lamina/siphon (map* #(conj % ch) ch) main-channel))
+  (lamina/siphon (map* #(conj % ch) ch) main-channel)
+  (swap! connected-clients conj ch))
 
 (defn export-graph
   []
-  (ImageIO/write (viz/render-graph main-channel) "png" (File. "resources/public/images/graph.png")))
+  (let [channels (conj (deref connected-clients) main-channel)
+        image-buffer (apply viz/render-graph channels)]
+  (ImageIO/write image-buffer "png" (File. "resources/public/images/graph.png"))))

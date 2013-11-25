@@ -54,8 +54,10 @@
            (file-filter (extensions :json :txt :swf))
            (on-change (partial files-changed files))))
 
-(defn start-web []
-  (run-jetty (var admin/app) {:port 8080 :join? false}))
+(defn start-web
+  [{host :admin-host
+    port :admin-port}]
+  (run-jetty (var admin/app) {:port port :host host :join? false}))
 
 (defn get-pid-file
   []
@@ -76,7 +78,10 @@
     ["-r" "--rate" "Delay between samples" :parse-fn #(Integer. %) :default 100]
     ["-h" "--help" "Show help" :default false :flag true]
     ["-d" "--deamon" "Start server as deamon" :default false :flag true]
-    ["--log" "path for log output" :default (str (System/getenv "HOME") "/Library/Logs/pearl_watcher.log")])
+    ["--log" "path for log output" :default (str (System/getenv "HOME") "/Library/Logs/pearl_watcher.log")]
+    ["-a" "--admin" "Start admin http server along with socket server" :default false :flag true]
+    ["-ap" "--admin-port" "port for http admin server" :default 8080]
+    ["-ah" "--admin-host" "host to server http admin server" :default "localhost"])
         usage (clojure.string/replace banner #"Usage:" "usage: modler [options] [model PATH]")]
 
     (when (:help options)
@@ -87,5 +92,6 @@
       (daemonize))
     (initLogger (:log options))
     (init-watcher options args)
-    (start-web)))
+    (if (:admin options)
+      (start-web options))))
 

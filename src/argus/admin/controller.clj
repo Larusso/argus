@@ -8,5 +8,13 @@
   (messaging/export-graph)
   (view/view-graph))
 
+(defn graph
+  []
+  (messaging/export-graph)
+  (view/view-graph))
+
+(defn p
+  [])
+
 (defroutes routes
   (GET "/" [] (index)))
