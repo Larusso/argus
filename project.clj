@@ -11,9 +11,10 @@
                  [digest "1.4.3"]
                  [compojure "1.1.5"]
                  [ring "1.2.1"]
-                 [hiccup "1.0.4"]]
+                 [hiccup "1.0.4"]
+                 [org.clojars.runa/conjure "2.2.0"]]
   :plugins [[lein-ring "0.8.5"]]
-  :main argus.core
-  :aot [argus.core]
+  :main argus.main
+  :aot [argus.main]
   :profiles {:dev {:dependencies [[ring-mock "0.1.5"]]}}
   :jvm-opts ["-Djava.net.preferIPv4Stack=true"])

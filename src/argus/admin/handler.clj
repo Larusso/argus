@@ -5,7 +5,7 @@
             [argus.admin.controller :as controller]))
 
 (defroutes app-routes
-   controller/routes
+   controller/status-routes
   (route/resources "/")
   (route/not-found "Not Found"))
 

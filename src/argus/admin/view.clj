@@ -18,6 +18,4 @@
 
 (defn view-graph
   []
-  (common "Graph" [:img {:src "images/graph.png"}]))
-
-(view-graph)
+  (common "Graph" [:div [:img {:src "images/graph.png"}] [:img {:src "images/propagation.png"}]]))
