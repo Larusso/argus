@@ -8,8 +8,27 @@
             [taoensso.timbre :as timbre :refer (trace debug info warn fatal spy with-log-level)])
   (:gen-class))
 
+(defcodec decoder_type (string :utf-8 :delimiters [":" \0]))
+
+(def policy_file_request "<policy-file-request/>")
+
+;;{:policy "<policy-file-request/>" :register "r" :delete "d"}))
+
+(defcodec policy {:header policy_file_request})
+
+(defn get_codec
+  [message_command]
+  (if (= message_command policy_file_request)
+    policy
+    (compile-frame {:header message_command :path (string :utf-8 :delimiters ["\r\n"])})))
+
+(defcodec decoder
+  (header
+   decoder_type
+   get_codec
+   :header))
+
 (def encoder [(string :utf-8 :length 32) (repeated :byte :prefix :int32)])
-(def decoder [(string :utf-8 :delimiters [":"]) (string :utf-8 :delimiters ["\r\n"])])
 
 (defn start-socket
   [{host :host

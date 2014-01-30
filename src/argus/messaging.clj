@@ -18,19 +18,21 @@
 (def connected-clients (atom []))
 
 (defn push-hash
-  [[- path source-channel :as message]]
+  [{path :path
+    source-channel :source-channel
+    :as message}]
   [(digest/md5 path) source-channel])
 
 (defn register?
-  [[command]]
+  [{command :header}]
   (= "r" command))
 
 (defn update?
-  [[command]]
+  [{command :header}]
   (= "u" command))
 
 (defn remove?
-  [[command]]
+  [{command :header}]
   (= "d" command))
 
 (defn inform-change
@@ -104,9 +106,11 @@
 
 (defn channel-connect
   [ch client-info]
+  (info "channel connect")
+  (receive-all ch println)
   ;;check if we can somehow join to channels so that the graph will no longer display a channel for each client
   (let [joined-ch ch]
-    (lamina/siphon (map* #(conj % joined-ch) joined-ch) main-channel)
+    (lamina/siphon (map* #(conj % {:source-channel joined-ch}) joined-ch) main-channel)
     (swap! connected-clients conj joined-ch))
     (export-graph))
 
